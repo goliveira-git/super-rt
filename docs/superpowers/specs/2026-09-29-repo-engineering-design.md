@@ -17,17 +17,18 @@ Non-goals: a custom presubmit service, generated API docs, a second build tool, 
 
 ## 2. Single gate: checks as Bazel targets
 
-`bazelisk test //...` includes, besides unit tests, these test targets (all small and hermetic):
+`bazelisk test //...` includes, besides unit tests, small hermetic check targets. A Bazel test only sees files declared as its inputs, so checks are generated per package by a macro that each package calls with its own sources (`glob(["*.py"])`), which also lets Bazel cache results per package:
 
-| Target | Runs | Fails when |
+| Macro | Targets per package | Fails when |
 |---|---|---|
-| `//tools/python:format_test` | `ruff format --check` on the workspace | any file is unformatted |
-| `//tools/python:lint_test` | `ruff check` | any rule violation |
-| `//tools/bazel:buildifier_test` | `buildifier -mode=check -lint=warn` | any BUILD or .bzl file is unformatted or has lint warnings |
+| `python_checks` (`//tools/python:defs.bzl`) | `quality_format` (`ruff format --check`), `quality_lint` (`ruff check`) | a file is unformatted or breaks a lint rule |
+| `starlark_checks` (`//tools/bazel:defs.bzl`) | `starlark_check` (`buildifier` check, lint warnings on) | a BUILD or .bzl file is unformatted or has a lint warning |
 
-The targets are small wrappers written here, not a third-party lint framework. If the wrappers become hard to maintain, adopt Aspect `rules_lint` in their place (a new dependency, so it needs its own approval and decision record).
+A guard (`//tools/git:check_packages`, run by `pre-push` and CI) fails when a directory holds tracked `.py` files but no `BUILD.bazel`, since such a package would escape every check.
 
-`bazelisk run //tools/python:ruff -- format .` and `bazelisk run //tools/bazel:buildifier -- -r .` fix what the checks report.
+The macros are small wrappers written here, not a third-party lint framework. If they become hard to maintain, adopt Aspect `rules_lint` in their place (a new dependency, so it needs its own approval and decision record).
+
+`bazelisk run //tools/python:ruff -- format .` and `bazelisk run //tools/bazel:buildifier -- <files>` fix what the checks report.
 
 ## 3. Test sizes replace pytest markers
 
@@ -49,7 +50,7 @@ Bazel `size` and `tags` express what the `hardware`, `gpu` and `cloud` markers d
 Hooks (`.githooks/`, shell scripts run by Git Bash, enabled once per clone with `git config core.hooksPath .githooks`):
 - `pre-commit`: `ruff format --check` on staged Python files and `buildifier -mode=check` on staged BUILD and .bzl files. Fast on purpose so commits stay quick.
 - `commit-msg`: subject at most 72 characters, no trailing period, blank line after the subject; trailers pass through.
-- `pre-push`: `bazelisk test //...` (cached, so quick after the first run).
+- `pre-push`: `bazelisk test //...` and the package guard (cached, so quick after the first run).
 
 CI (`.github/workflows/ci.yml`, GitHub Actions, `windows-latest`), on every push and pull request:
 1. checkout, restore the Bazel disk cache;
