@@ -1,5 +1,5 @@
-# 001. Python 3.12 with uv, pytest, and ruff
-Status: accepted
+# 001. Python 3.12 with pytest and ruff
+Status: accepted (uv part superseded by 002)
 Date: 2026-09-29
 
 ## Context
@@ -11,8 +11,7 @@ AMe drives an Intel RealSense camera, GPU speech models, voice cloning, and a Cl
 - **Mixed Python + TS** — more moving parts than the project needs now.
 
 ## Decision
-Python 3.12 for all services; uv for Python installation, dependencies, and lockfile; pytest; ruff for formatting and linting, enforced by a repo pre-commit hook. 3.12 rather than 3.13 because GPU and camera wheels lag new Python releases.
+Python 3.12 for all services; Bazel-managed Python (see 002); pytest; ruff for formatting and linting, enforced by a repo pre-commit hook. 3.12 rather than 3.13 because GPU and camera wheels lag new Python releases.
 
 ## Consequences
 - One language and one toolchain. The face renderer may still need JavaScript (decided in the face slice).
-- uv's per-script environments let spikes try conflicting libraries without polluting the project.

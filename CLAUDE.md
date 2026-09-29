@@ -39,28 +39,36 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 # Conventions
 
 ## Stack
-- **Python 3.12** (exactly; `>=3.12,<3.13`), managed by **uv** (installs Python, resolves and locks dependencies).
+- **Bazel** (via Bazelisk, version pinned in `.bazelversion`) builds and tests the whole monorepo. **Python 3.12** is the hermetic interpreter Bazel downloads (`rules_python`); pip dependencies are pinned in `requirements_lock.txt`. No `.venv` and no uv.
+- More languages may join as sibling folders under a project; C++ is the likeliest (`rules_cc` ships with Bazel).
 - Services are **asyncio** programs. Hub transport: WebSocket on `127.0.0.1` (spec §3).
 - Cloud model: Anthropic Claude via the official `anthropic` SDK — **only** in `ame.mind`.
-- Rejected: Node/TypeScript (weaker camera and ML ecosystem), pip/Poetry (uv is faster and installs Python itself), black + flake8 (ruff does both).
-- Why: see `docs/decisions/001-stack.md`.
+- Rejected: Node/TypeScript (weaker camera and ML ecosystem), uv, pip/Poetry (they keep a `.venv`; Bazel already owns the toolchain), black + flake8 (ruff does both).
+- Why: see `docs/decisions/001-stack.md` and `docs/decisions/002-bazel-monorepo.md`.
 
 ## Directory layout
 ```
-src/ame/<service>/   one package per service: hub, mind, voice, eyes, face, console
-src/ame/common/      helpers used by two or more services (created when first needed)
-tests/               mirrors src/ame: tests/<service>/test_<module>.py
-spikes/              throwaway experiments; never imported by src/, excluded from lint and tests
-docs/spikes/         one findings doc per spike
-docs/decisions/      NNN-short-title.md decision records
-docs/superpowers/    specs/ and plans/
-.githooks/           repo git hooks (pre-commit runs the formatter and linter)
+<project>/<language>/   one folder per project, then per language (ame/python/, later ame/cpp/)
+libs/<name>/             code shared by two or more projects (created when first needed)
+tools/<language>/        shared build tooling: test macro, ruff wrapper, pytest runner
+docs/                    docs shared across the repo
+  spikes/                 one findings doc per spike
+  decisions/              NNN-short-title.md decision records
+  superpowers/            specs/ and plans/
+.githooks/                repo git hooks (pre-commit runs the formatter and linter)
+
+Inside ame/python/:
+  src/ame/<service>/      one package per service: hub, mind, voice, eyes, face, console
+  src/ame/common/         helpers used by two or more services (created when first needed)
+  tests/                  mirrors src/ame: tests/<service>/test_<module>.py
+  spikes/                 throwaway experiments; never imported by src/, excluded from lint and tests
 ```
+Every folder with code has a `BUILD.bazel`. Windows Developer Mode must be on (rules_python creates symlinks).
 User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-- Formatter and linter: **ruff**, config in `pyproject.toml` (line length 100, double quotes, rules E, F, I, UP, B; imports sorted by ruff's `I` rule).
-- Format: `uv run ruff format .` · Lint: `uv run ruff check .`
+- Formatter and linter: **ruff**, config in the root `ruff.toml` (line length 100, double quotes, rules E, F, I, UP, B; imports sorted by ruff's `I` rule).
+- Format: `bazelisk run //tools/python:ruff -- format .` · Lint: `bazelisk run //tools/python:ruff -- check .`
 - Enforced on every commit by `.githooks/pre-commit`. Enable once per clone: `git config core.hooksPath .githooks`.
 - `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
 - **Docstrings are literal:** state what the module, class, or function does — inputs, outputs, side effects. No aspirations, no marketing.
@@ -78,18 +86,17 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 - Never log secrets, transcripts, or memory contents above DEBUG level.
 
 ## Testing
-- Framework: **pytest**. Tests live in `tests/`, mirroring `src/ame/`.
+- Framework: **pytest**. Tests live in `ame/python/tests/`, mirroring `ame/python/src/ame/`; each file gets an `ame_test` target in that folder's `BUILD.bazel`.
 - **Keep unit tests very light:** a few tests per module — the main behaviour and the one or two failures that would actually hurt. No exhaustive case tables.
-- Tests needing hardware, the GPU, or the network are marked `hardware`, `gpu`, or `cloud` and are skipped by default. Run them explicitly with `uv run pytest -m gpu` etc.
+- Tests needing hardware, the GPU, or the network are marked `hardware`, `gpu`, or `cloud` and are skipped by default. Run them explicitly with `bazelisk test <target> --test_arg=-m --test_arg=gpu` etc.
 - No coverage target.
-- Run: `uv run pytest`
+- Run: `bazelisk test //...`
 
 ## Build and run
-- Install/sync: `uv sync`
-- Test: `uv run pytest`
-- Lint: `uv run ruff check .` · Format check: `uv run ruff format --check .`
-- Run AMe: added in slice 1 (`uv run ame`).
-- Spikes: `uv run spikes/<script>.py` (each script declares its own dependencies).
+- Test: `bazelisk test //...`
+- Lint: `bazelisk run //tools/python:ruff -- check .` · Format check: `bazelisk run //tools/python:ruff -- format --check .`
+- Run AMe: added in slice 1 (`bazelisk run //ame/python:ame`).
+- Spikes: run with the system Python 3.12, `python ame/python/spikes/<script>.py`; each script lists its pip dependencies in its docstring and installs them with `pip install --user`. No venv.
 
 ## Branching
 - `main` holds reviewed work only. All work happens on `feature/<short-name>` branches.
@@ -97,7 +104,7 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 - A branch merges into `main` only after `test-plan` and `review-checklist` both end in **PASS**, only with the user's approval, and only as a fast-forward (`git merge --ff-only`), so `main` stays linear.
 
 ## Commit history
-- **One logical change per commit.** Each commit passes `uv run pytest` and the ruff checks on its own.
+- **One logical change per commit.** Each commit passes `bazelisk test //...` and the ruff checks on its own.
 - **No noise commits.** Fix-ups ("fix typo", "address review", "WIP") are folded into the commit they fix before the branch merges: `git commit --amend` for the latest commit, or `git commit --fixup <sha>` then `git rebase --autosquash main`.
 - **Never rewrite pushed commits.** Amend and autosquash only what exists solely on this machine.
 - Formatting-only changes to existing code go in their own commit, never mixed into a behaviour change.

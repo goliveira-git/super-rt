@@ -12,6 +12,6 @@ AMe is four local services and a console, started by one launcher:
 | mind | Hub (WebSocket on 127.0.0.1), conversation, initiative, memory. The only service that uses the network. |
 | console | Local web page: memory, camera off, do-not-disturb, status, enrollment. |
 
-Services exchange JSON envelopes `{type, ts, source, data}` (spec §3), implemented in `src/ame/hub/messages.py`.
+Services exchange JSON envelopes `{type, ts, source, data}` (spec §3), implemented in `ame/python/src/ame/hub/messages.py`.
 
 Build order: spec §10. Slice 0 answers the technical risks; slice 1 makes AMe talk.
