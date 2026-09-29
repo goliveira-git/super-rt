@@ -28,6 +28,11 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 4. **Ask before crossing the machine boundary.** Push, tag, publish, deploy, or anything touching a shared environment requires explicit user approval each time.
 5. **No new dependency, library, or tool without the user's approval.** Name it, say what it's for and why existing tools won't do, and wait for a yes. This includes third-party skills and plugins.
 6. **Git: branch per feature, clean history.** Work on a branch, not on `main`, following Branching and Commit history below. Never push, tag, or merge into `main` without asking (rule 4).
+7. **Spend tokens where judgment is needed.** The user is on a small monthly plan.
+   - **Opus** only for complex or creative work: kickoff, brainstorming, specs, writing plans, UX specs, the final whole-branch review. Switch with `/model opus`, and back with `/model sonnet` when that work is done.
+   - **Sonnet** (the default) for executing a written plan, tests, docs, and release steps.
+   - **Haiku** for any subagent that only searches or reads.
+   - Keep context small: redirect long command output to a file and read its tail; read only the part of a file you need; don't re-read files you just wrote.
 
 ---
 
