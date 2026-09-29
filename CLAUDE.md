@@ -1,8 +1,8 @@
 # Project
 
-> **Status: not yet kicked off.** The Conventions section is filled in during kickoff (`architecture-kickoff` skill). Until then, do not write project code.
+> **Status: kicked off 2026-09-29.** Conventions below are binding. Design: `docs/superpowers/specs/2026-09-29-ame-design.md`.
 
-**What this is:** _(filled in at kickoff: one paragraph — what the project does and who it's for)_
+**What this is:** AMe — a local, pt-BR-speaking conversational companion for one person. It sees them through an Intel RealSense depth camera, shows a 3D face scanned from them, speaks in a clone of their voice, and learns who they are from conversation, acting as a sparring partner that thinks like them at their best. Perception, speech, face, and memory run on their PC; only conversation text goes to a Claude model.
 
 ---
 
@@ -27,40 +27,87 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 3. **Both checks must pass before release.** `test-plan` and `review-checklist` must each end in an explicit **PASS**. Not waivable under time pressure.
 4. **Ask before crossing the machine boundary.** Push, tag, publish, deploy, or anything touching a shared environment requires explicit user approval each time.
 5. **No new dependency, library, or tool without the user's approval.** Name it, say what it's for and why existing tools won't do, and wait for a yes. This includes third-party skills and plugins.
-6. **Git: branch per feature, commit per passed stage.** Work on a branch, not on `main`. Commit locally when a stage passes its check. Never push, tag, or merge into `main` without asking (rule 4). Until kickoff fills in Branching and Commit format below, name branches `feature/<short-name>` and write commit subjects in the imperative mood ("Add login form").
+6. **Git: branch per feature, clean history.** Work on a branch, not on `main`, following Branching and Commit history below. Never push, tag, or merge into `main` without asking (rule 4).
 
 ---
 
 # Conventions
 
-> **PLACEHOLDER — filled in at kickoff.** Binding once written. Replace every placeholder with a specific, verifiable answer, and run each command you write down to confirm it works.
-
 ## Stack
-_Languages, frameworks, database, runtime versions, package manager. Record why, and what was rejected._
+- **Python 3.12** (exactly; `>=3.12,<3.13`), managed by **uv** (installs Python, resolves and locks dependencies).
+- Services are **asyncio** programs. Hub transport: WebSocket on `127.0.0.1` (spec §3).
+- Cloud model: Anthropic Claude via the official `anthropic` SDK — **only** in `ame.mind`.
+- Rejected: Node/TypeScript (weaker camera and ML ecosystem), pip/Poetry (uv is faster and installs Python itself), black + flake8 (ruff does both).
+- Why: see `docs/decisions/001-stack.md`.
 
 ## Directory layout
-_What goes where. Where new code of each type belongs._
+```
+src/ame/<service>/   one package per service: hub, mind, voice, eyes, face, console
+src/ame/common/      helpers used by two or more services (created when first needed)
+tests/               mirrors src/ame: tests/<service>/test_<module>.py
+spikes/              throwaway experiments; never imported by src/, excluded from lint and tests
+docs/spikes/         one findings doc per spike
+docs/decisions/      NNN-short-title.md decision records
+docs/superpowers/    specs/ and plans/
+.githooks/           repo git hooks (pre-commit runs the formatter and linter)
+```
+User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-_Formatter and linter with config, line length, import ordering, quote style. Name the exact command._
+- Formatter and linter: **ruff**, config in `pyproject.toml` (line length 100, double quotes, rules E, F, I, UP, B; imports sorted by ruff's `I` rule).
+- Format: `uv run ruff format .` · Lint: `uv run ruff check .`
+- Enforced on every commit by `.githooks/pre-commit`. Enable once per clone: `git config core.hooksPath .githooks`.
+- `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
+- **Docstrings are literal:** state what the module, class, or function does — inputs, outputs, side effects. No aspirations, no marketing.
+- **No comments unless strictly necessary:** only for a non-obvious *why* the code cannot express. Never restate what the code does.
 
 ## Naming
-_Files, directories, types, functions, variables, constants, database objects._
+- Modules and packages: `snake_case`. Classes: `PascalCase`. Functions and variables: `snake_case`. Constants: `UPPER_SNAKE_CASE`.
+- Hub message types: lowercase dotted `service.event_name` (e.g. `voice.user_said`), matching `^[a-z]+(\.[a-z_]+)+$`.
+- Tests: `test_<behavior_in_words>`.
 
 ## Error handling
-_The project's pattern: exceptions vs. results, where errors are caught, what is logged, what reaches the user._
+- Use exceptions. Each module defines a narrow exception type for its own failures (e.g. `MessageError`).
+- Catch at service boundaries (the hub connection loop, a service's main loop): log and continue. A bad message or a failed call never crashes a service or the hub.
+- Logs are English, via stdlib `logging`. What AMe says to the user about a failure is pt-BR and goes through voice or the console.
+- Never log secrets, transcripts, or memory contents above DEBUG level.
 
 ## Testing
-_Framework, where tests live, naming, what must be tested, coverage expectation, exact run command._
+- Framework: **pytest**. Tests live in `tests/`, mirroring `src/ame/`.
+- **Keep unit tests very light:** a few tests per module — the main behaviour and the one or two failures that would actually hurt. No exhaustive case tables.
+- Tests needing hardware, the GPU, or the network are marked `hardware`, `gpu`, or `cloud` and are skipped by default. Run them explicitly with `uv run pytest -m gpu` etc.
+- No coverage target.
+- Run: `uv run pytest`
 
 ## Build and run
-_Exact commands: install, dev, build, lint, test._
+- Install/sync: `uv sync`
+- Test: `uv run pytest`
+- Lint: `uv run ruff check .` · Format check: `uv run ruff format --check .`
+- Run AMe: added in slice 1 (`uv run ame`).
+- Spikes: `uv run spikes/<script>.py` (each script declares its own dependencies).
 
 ## Branching
-_Model, branch naming, what merges where, whether `main` is protected._
+- `main` holds reviewed work only. All work happens on `feature/<short-name>` branches.
+- Keep a branch current by rebasing it onto `main` (`git rebase main`), never by merging `main` into it.
+- A branch merges into `main` only after `test-plan` and `review-checklist` both end in **PASS**, only with the user's approval, and only as a fast-forward (`git merge --ff-only`), so `main` stays linear.
+
+## Commit history
+- **One logical change per commit.** Each commit passes `uv run pytest` and the ruff checks on its own.
+- **No noise commits.** Fix-ups ("fix typo", "address review", "WIP") are folded into the commit they fix before the branch merges: `git commit --amend` for the latest commit, or `git commit --fixup <sha>` then `git rebase --autosquash main`.
+- **Never rewrite pushed commits.** Amend and autosquash only what exists solely on this machine.
+- Formatting-only changes to existing code go in their own commit, never mixed into a behaviour change.
+- Never commit generated files, recordings, or files unrelated to the commit's change.
 
 ## Commit format
-_The exact format, with a real example._
+Imperative subject, 72 characters max, no trailing period; blank line; body explaining why when it isn't obvious.
+```
+Add hub message envelope
+
+Every service exchanges the same JSON envelope (spec §3); validating
+it in one place keeps a malformed message from crashing the hub.
+```
 
 ## Configuration and secrets
-_Where config lives, how secrets are supplied, what must never be committed._
+- Runtime config: `%LOCALAPPDATA%\AMe\config.toml` (created in slice 1).
+- The Anthropic API key comes from the `ANTHROPIC_API_KEY` environment variable. Never in a file in the repo, never logged.
+- Never commit: `.env*`, recordings (`*.wav`), captures (`*.bag`, `*.npz`), meshes (`*.ply`, `*.glb`), model files.
