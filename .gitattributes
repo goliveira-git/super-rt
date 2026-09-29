@@ -1,0 +1,15 @@
+* text=auto eol=lf
+*.sh text eol=lf
+.githooks/* text eol=lf
+*.py text eol=lf
+*.bazel text eol=lf
+*.bzl text eol=lf
+*.wav binary
+*.flac binary
+*.bag binary
+*.npz binary
+*.ply binary
+*.glb binary
+*.onnx binary
+*.pth binary
+*.safetensors binary
