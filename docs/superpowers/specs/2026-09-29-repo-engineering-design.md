@@ -7,9 +7,9 @@ Date: 2026-09-29 · Status: awaiting review · Builds on `docs/decisions/002-baz
 Make the monorepo enforce readable, maintainable, fast code by machine, so no rule depends on remembering it. Built for one developer on a small token budget; more projects and languages (C++ first) will join.
 
 Success means:
-- One command, `bazelisk test //...`, runs every check: tests, format, lint, types, BUILD-file lint. The commit hook, CI and the developer run the same command, so they cannot disagree.
+- One command, `bazelisk test //...`, runs every check: tests, format, lint, BUILD-file lint. The commit hook, CI and the developer run the same command, so they cannot disagree.
 - A broken or unformatted change cannot reach `main` without an explicit bypass, and CI catches bypasses.
-- Every public module, class and function has a literal docstring, and types are strict from the first line of code.
+- Every public module, class and function has a literal docstring, and annotations are required on all non-test code (enforced by ruff `ANN`).
 - Latency budgets from the AMe design spec (§9 Testing, end-to-end latency harness; §6 face frame-time budget) are executable tests, and optimisation is driven by a measurement.
 - Adding a language or a dependency follows a written procedure.
 
@@ -23,7 +23,6 @@ Non-goals: a custom presubmit service, generated API docs, a second build tool, 
 |---|---|---|
 | `//tools/python:format_test` | `ruff format --check` on the workspace | any file is unformatted |
 | `//tools/python:lint_test` | `ruff check` | any rule violation |
-| `//tools/python:types_test` | `pyright` (strict) | any type error |
 | `//tools/bazel:buildifier_test` | `buildifier -mode=check -lint=warn` | any BUILD or .bzl file is unformatted or has lint warnings |
 
 The targets are small wrappers written here, not a third-party lint framework. If the wrappers become hard to maintain, adopt Aspect `rules_lint` in their place (a new dependency, so it needs its own approval and decision record).
@@ -39,12 +38,11 @@ Bazel `size` and `tags` express what the `hardware`, `gpu` and `cloud` markers d
 - The `ame_test` macro takes `tags` and sets `size` and `timeout` defaults; the pytest `-m` filter in the runner is removed.
 - A test file is either all hardware or none; mixed files are split.
 
-## 4. Strict types and lint
+## 4. Annotations and lint
 
-- **pyright**, `typeCheckingMode = "strict"`, config in root `pyrightconfig.json`, `pythonVersion = "3.12"`, `extraPaths = ["ame/python/src"]`. New tool; needs approval (§9).
-- **ruff** rules widened to `E, F, I, UP, B` plus `ASYNC` (services are asyncio), `PT` (pytest style), `SIM`, `C4`, `RUF`, `PERF`, `C901` with `max-complexity = 10`, and `D100`–`D107` (a docstring must exist on public modules, classes and functions; tests are exempt).
+- **ruff** rules widened to `E, F, I, UP, B` plus `ASYNC` (services are asyncio), `PT` (pytest style), `SIM`, `C4`, `RUF`, `PERF`, `C901` with `max-complexity = 10`, and `D100`–`D104` (a docstring must exist on public modules, packages, classes, methods and functions) and `ANN` (parameters and return values must be annotated); tests are exempt from both.
 - Docstring content ("literal, no aspirations") and "no comments unless necessary" stay review rules; no tool can judge them.
-- Risk: pyright must resolve pip packages that sit in Bazel's cache. If that is brittle, the wrapper generates the `extraPaths` list from the pip lock, recorded in a decision record. `types_test` is the only place this can fail.
+- **No type checker for now.** pyright was cut from this design because its first run needs network access and Node inside Bazel, which could stall the work. Annotations are still required (`ANN` rules) so a checker can be added later without rewriting code; correctness of types is left to review until then.
 
 ## 5. Hooks and CI
 
@@ -81,12 +79,11 @@ CI is the authority; hooks are a convenience and can be bypassed. The workflow f
 2. `.githooks/` and enabling instructions.
 3. Wider ruff rules, and the fixes the new rules require.
 4. `format_test` and `lint_test` targets.
-5. pyright config and `types_test`.
-6. buildifier (`buildifier_prebuilt`) and `buildifier_test`.
-7. Test sizes: `ame_test` gains `tags`, hardware and GPU tests become manual, the pytest marker filter is removed.
-8. Perf tooling: `pytest-benchmark`, `ame_perf_test`.
-9. CI workflow.
-10. `docs/engineering.md` and the `CLAUDE.md` update.
+5. buildifier (`buildifier_prebuilt`) and `buildifier_test`.
+6. Test sizes: `ame_test` gains `tags`, hardware and GPU tests become manual, the pytest marker filter is removed.
+7. Perf tooling: `pytest-benchmark`, `ame_perf_test`.
+8. CI workflow.
+9. `docs/engineering.md` and the `CLAUDE.md` update.
 
 Each step keeps `bazelisk test //...` green.
 
@@ -94,14 +91,14 @@ Each step keeps `bazelisk test //...` green.
 
 | Tool | Purpose | Why existing tools will not do |
 |---|---|---|
-| `pyright` (pip) | strict static type checking | ruff does not check types |
 | `pytest-benchmark` (pip) | timing statistics for perf tests | requested by the user; `timeit` lacks statistics and pytest integration |
 | `buildifier_prebuilt` (Bazel module) | format and lint BUILD and .bzl files | nothing else understands Starlark |
 | `actions/checkout`, `actions/cache` (GitHub Actions) | get the source and keep the Bazel cache in CI | required by any workflow |
 
-The user chose pyright and pytest-benchmark in conversation on 2026-09-29. Approval of `buildifier_prebuilt` and the GitHub Actions is given by approving this spec.
+The user chose pytest-benchmark in conversation on 2026-09-29. Approval of `buildifier_prebuilt` and the GitHub Actions is given by approving this spec.
 
 ## 10. Open items
 
 - Whether `rules_lint` should replace the wrappers is decided only if the wrappers prove painful (§2).
 - Branch protection settings are decided when the repo is first pushed.
+- A type checker (pyright, mypy or ty) can be added later as a `<name>_types` check in `python_checks`; it was cut because it risked blocking progress.
