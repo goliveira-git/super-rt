@@ -1,0 +1,12 @@
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/spikes", "docs", "bazel-*"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.isort]
+known-first-party = ["ame"]
+
+[format]
+quote-style = "double"

@@ -1,0 +1,7 @@
+load("//tools/python:defs.bzl", "ame_test")
+
+ame_test(
+    name = "test_package",
+    src = "test_package.py",
+    deps = ["//ame/python/src/ame"],
+)

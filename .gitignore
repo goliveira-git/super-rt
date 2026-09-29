@@ -24,3 +24,25 @@ tmp/
 
 # The architect extends this at kickoff with stack-specific entries
 # (dependency directories, build output, coverage reports).
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Personal media and models — must live in %LOCALAPPDATA%\AMe, never here
+*.wav
+*.flac
+*.bag
+*.npz
+*.ply
+*.glb
+*.onnx
+*.pth
+*.safetensors
+
+# Bazel
+bazel-*
+MODULE.bazel.lock
