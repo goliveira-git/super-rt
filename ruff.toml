@@ -1,6 +1,7 @@
 line-length = 100
 target-version = "py312"
 extend-exclude = ["**/spikes", "docs", "bazel-*"]
+force-exclude = true
 
 [lint]
 select = [
