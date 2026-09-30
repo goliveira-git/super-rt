@@ -45,3 +45,6 @@ __pycache__/
 
 # Bazel
 bazel-*
+
+# graphify output (generated)
+graphify-out/
