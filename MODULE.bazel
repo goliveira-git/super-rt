@@ -1,9 +1,17 @@
-module(name = "ame", version = "0.1.0")
+module(
+    name = "ame",
+    version = "0.1.0",
+)
 
 bazel_dep(name = "rules_python", version = "2.3.4")
 
+bazel_dep(name = "buildifier_prebuilt", version = "10.1.0", dev_dependency = True)
+
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
-python.toolchain(python_version = "3.12", is_default = True)
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(

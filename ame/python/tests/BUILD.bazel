@@ -1,3 +1,4 @@
+load("//tools/bazel:defs.bzl", "starlark_checks")
 load("//tools/python:defs.bzl", "ame_test", "python_checks")
 
 ame_test(
@@ -11,3 +12,8 @@ python_checks(
     srcs = glob(["*.py"]),
     deps = ["//ame/python/src/ame"],
 )
+
+starlark_checks(srcs = ["BUILD.bazel"] + glob(
+    ["*.bzl"],
+    allow_empty = True,
+))

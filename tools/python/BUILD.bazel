@@ -1,5 +1,6 @@
 load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//tools/bazel:defs.bzl", "starlark_checks")
 load("//tools/python:defs.bzl", "python_checks")
 
 exports_files([
@@ -26,3 +27,5 @@ python_checks(
     name = "quality",
     srcs = glob(["*.py"]),
 )
+
+starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"]))

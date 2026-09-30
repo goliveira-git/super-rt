@@ -1,4 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//tools/bazel:defs.bzl", "starlark_checks")
 load("//tools/python:defs.bzl", "ame_test", "python_checks")
 
 py_library(
@@ -43,3 +44,8 @@ python_checks(
     srcs = glob(["*.py"]),
     deps = [":check_commit_msg_lib"],
 )
+
+starlark_checks(srcs = ["BUILD.bazel"] + glob(
+    ["*.bzl"],
+    allow_empty = True,
+))

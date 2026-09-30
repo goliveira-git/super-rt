@@ -1,1 +1,8 @@
+load("//tools/bazel:defs.bzl", "starlark_checks")
+
 exports_files(["ruff.toml"])
+
+starlark_checks(srcs = [
+    "BUILD.bazel",
+    "MODULE.bazel",
+])

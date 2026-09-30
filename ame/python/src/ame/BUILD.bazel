@@ -1,4 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/bazel:defs.bzl", "starlark_checks")
 load("//tools/python:defs.bzl", "python_checks")
 
 py_library(
@@ -12,3 +13,8 @@ python_checks(
     name = "quality",
     srcs = glob(["*.py"]),
 )
+
+starlark_checks(srcs = ["BUILD.bazel"] + glob(
+    ["*.bzl"],
+    allow_empty = True,
+))
