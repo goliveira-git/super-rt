@@ -3,8 +3,17 @@
 load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_test")
 
-def ame_test(name, src, deps = [], **kwargs):
-    """A py_test that runs `src` under pytest with the default marker filter."""
+KINDS = ["hardware", "gpu", "cloud"]
+
+def ame_test(name, src, deps = [], kind = None, tags = [], **kwargs):
+    """A py_test that runs `src` under pytest.
+
+    Without `kind` the test is small and runs with `bazelisk test //...`. `kind` is one of
+    "hardware", "gpu" or "cloud": such a test is tagged manual and exclusive, sized large, and
+    must be run by name, for example `bazelisk test //ame/python/tests:test_camera`.
+    """
+    if kind != None and kind not in KINDS:
+        fail("kind must be one of %s, got %r" % (KINDS, kind))
     py_test(
         name = name,
         srcs = [src, "//tools/python:pytest_runner.py"],
@@ -12,6 +21,8 @@ def ame_test(name, src, deps = [], **kwargs):
         args = ["$(rootpath %s)" % src],
         data = [src],
         deps = deps + [requirement("pytest")],
+        size = "large" if kind else "small",
+        tags = tags + ([kind, "manual", "exclusive"] if kind else []),
         **kwargs
     )
 
