@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/bazel-disk-cache
+          key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'requirements_lock.txt') }}-${{ github.sha }}
+          restore-keys: |
+            bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'requirements_lock.txt') }}-
+            bazel-${{ runner.os }}-
+
+      - name: Install Bazelisk
+        shell: pwsh
+        run: |
+          if (-not (Get-Command bazelisk -ErrorAction SilentlyContinue)) { choco install bazelisk -y }
+
+      - name: Package guard
+        shell: pwsh
+        run: bazelisk run //tools/git:check_packages
+
+      - name: Test
+        shell: pwsh
+        run: bazelisk test //... "--disk_cache=$HOME/bazel-disk-cache"
+
+      - name: Commit messages
+        if: github.ref != 'refs/heads/main'
+        shell: pwsh
+        run: bazelisk run //tools/git:check_commit_msg -- --range origin/main..HEAD
