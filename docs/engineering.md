@@ -6,6 +6,8 @@
 - Python lint: `bazelisk run //tools/python:ruff -- check . --fix`
 - BUILD and .bzl: `bazelisk run //tools/bazel:buildifier -- -lint=fix <repo-relative file paths>`, run from the workspace root
 
+PowerShell 7 drops a bare `--`, so `bazelisk run <target> -- <args>` loses the separator and Bazel reads the tool's flags as its own. CI found this. Run these commands in Git Bash or Windows PowerShell 5.1.
+
 Enable the hooks once per clone: `git config core.hooksPath .githooks`.
 - `pre-commit` checks the format of staged `.py` files with ruff and of staged `.bazel` and `.bzl` files with buildifier.
 - `commit-msg` checks the message against CLAUDE.md "Commit format".
