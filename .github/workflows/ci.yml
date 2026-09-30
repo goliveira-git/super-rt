@@ -40,12 +40,12 @@ jobs:
 
       - name: Commit messages
         if: github.ref != 'refs/heads/main'
-        shell: pwsh
+        shell: bash
         run: bazelisk run //tools/git:check_commit_msg -- --range origin/main..HEAD
 
       - name: Commit messages (push to main)
         if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000' && github.event.before != github.sha
-        shell: pwsh
+        shell: bash
         run: bazelisk run //tools/git:check_commit_msg -- --range ${{ github.event.before }}..${{ github.sha }}
 
       - name: Save Bazel disk cache
