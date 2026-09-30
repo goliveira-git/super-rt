@@ -33,6 +33,7 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
    - **Sonnet** (the default) for executing a written plan, tests, docs, and release steps.
    - **Haiku** for any subagent that only searches or reads.
    - Keep context small: redirect long command output to a file and read its tail; read only the part of a file you need; don't re-read files you just wrote.
+8. **Get smarter as we go.** At each stage boundary (starting a task, before a review, when something fails), name the installed skill that applies and any that was skipped, and tell subagents which skill to load. Flag a recurring task that has no skill and suggest writing one with `anthropic-skills:skill-creator` (a new third-party skill still needs approval, rule 5). When a plan finishes, add a short retrospective to the final report: what cost the most turns or tokens, and what to automate or change next time. Delegate anything a subagent can do to subagents, so the single developer only decides and approves.
 
 ---
 
