@@ -54,17 +54,18 @@ def python_checks(name, srcs):
             tags = ["quality"],
         )
 
-def ame_perf_test(name, src, deps = [], kind = None, **kwargs):
+def ame_perf_test(name, src, deps = [], kind = None, tags = [], **kwargs):
     """An ame_test for a latency or memory budget, run on demand and never by `//...`.
 
     Tagged manual, perf and exclusive so no other test competes for the CPU while it measures.
     Uses pytest-benchmark; assert the budget with `perf_budget.assert_median_under`.
+    Extra `tags` are added to the fixed ones.
     """
     ame_test(
         name = name,
         src = src,
         deps = deps + [requirement("pytest-benchmark")],
         kind = kind,
-        tags = ["manual", "perf", "exclusive"],
+        tags = tags + ["manual", "perf", "exclusive"],
         **kwargs
     )
