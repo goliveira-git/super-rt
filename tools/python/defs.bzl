@@ -11,7 +11,18 @@ def ame_test(name, src, deps = [], kind = None, tags = [], **kwargs):
     Without `kind` the test is small and runs with `bazelisk test //...`. `kind` is one of
     "hardware", "gpu" or "cloud": such a test is tagged manual and exclusive, sized large, and
     must be run by name, for example `bazelisk test //ame/python/tests:test_camera`.
+    Do not pass `size`: it is derived from `kind`.
+
+    Args:
+      name: target name.
+      src: the pytest file to run.
+      deps: libraries the test imports; pytest is added.
+      kind: None, or one of KINDS.
+      tags: extra tags, added to the ones `kind` implies.
+      **kwargs: forwarded to py_test, except `size`.
     """
+    if "size" in kwargs:
+        fail("ame_test derives size from kind (small, or large when kind is set); do not pass size")
     if kind != None and kind not in KINDS:
         fail("kind must be one of %s, got %r" % (KINDS, kind))
     py_test(
