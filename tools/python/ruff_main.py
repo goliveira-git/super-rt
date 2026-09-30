@@ -13,6 +13,7 @@ import ruff
 
 
 def find_ruff() -> Path:
+    """Returns the path of `bin/ruff.exe` in the ruff wheel; raises FileNotFoundError if absent."""
     package_dir = Path(ruff.__file__).resolve().parent
     for root in (package_dir.parent.parent, package_dir.parent):
         candidate = root / "bin" / "ruff.exe"

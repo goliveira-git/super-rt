@@ -52,7 +52,7 @@ def git_log_command(revision_range: str) -> list[str]:
 
 
 def messages_in_range(revision_range: str) -> list[str]:
-    """Returns the full message of every commit in `revision_range` (for example origin/main..HEAD)."""
+    """Returns the full message of every commit in `revision_range`, e.g. origin/main..HEAD."""
     output = subprocess.run(
         git_log_command(revision_range),
         capture_output=True,
