@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -15,7 +16,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      - name: Restore Bazel disk cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/bazel-disk-cache
           key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'requirements_lock.txt') }}-${{ github.sha }}
@@ -40,3 +42,15 @@ jobs:
         if: github.ref != 'refs/heads/main'
         shell: pwsh
         run: bazelisk run //tools/git:check_commit_msg -- --range origin/main..HEAD
+
+      - name: Commit messages (push to main)
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000' && github.event.before != github.sha
+        shell: pwsh
+        run: bazelisk run //tools/git:check_commit_msg -- --range ${{ github.event.before }}..${{ github.sha }}
+
+      - name: Save Bazel disk cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/bazel-disk-cache
+          key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'requirements_lock.txt') }}-${{ github.sha }}
