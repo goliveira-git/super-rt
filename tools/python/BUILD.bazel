@@ -1,7 +1,7 @@
 load("@pip//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 load("//tools/bazel:defs.bzl", "starlark_checks")
-load("//tools/python:defs.bzl", "python_checks")
+load("//tools/python:defs.bzl", "ame_test", "python_checks")
 
 exports_files([
     "check_runner.py",
@@ -20,6 +20,12 @@ py_binary(
     name = "ruff",
     srcs = ["ruff_main.py"],
     main = "ruff_main.py",
+    deps = [":ruff_bin"],
+)
+
+ame_test(
+    name = "ruff_bin_test",
+    src = "ruff_bin_test.py",
     deps = [":ruff_bin"],
 )
 
