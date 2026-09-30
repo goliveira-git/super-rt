@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+. "$(dirname "$0")/lib.sh"
+
+py_files=$(git diff --cached --name-only --diff-filter=ACM -- '*.py')
+if [ -n "$py_files" ]; then
+    # shellcheck disable=SC2086
+    "$BAZELISK" run //tools/python:ruff -- format --check $py_files
+fi

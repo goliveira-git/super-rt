@@ -1,0 +1,21 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//tools/python:defs.bzl", "ame_test")
+
+py_library(
+    name = "check_commit_msg_lib",
+    srcs = ["check_commit_msg.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "check_commit_msg",
+    srcs = ["check_commit_msg.py"],
+    main = "check_commit_msg.py",
+)
+
+ame_test(
+    name = "check_commit_msg_test",
+    src = "check_commit_msg_test.py",
+    deps = [":check_commit_msg_lib"],
+)
