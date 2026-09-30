@@ -44,6 +44,7 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 - More languages may join as sibling folders under a project; C++ is the likeliest (`rules_cc` ships with Bazel).
 - Services are **asyncio** programs. Hub transport: WebSocket on `127.0.0.1` (spec §3).
 - Cloud model: Anthropic Claude via the official `anthropic` SDK — **only** in `ame.mind`.
+- Quality tooling: ruff (with annotation and docstring rules), buildifier, pytest-benchmark; see `docs/decisions/003-single-bazel-gate.md`.
 - Rejected: Node/TypeScript (weaker camera and ML ecosystem), uv, pip/Poetry (they keep a `.venv`; Bazel already owns the toolchain), black + flake8 (ruff does both).
 - Why: see `docs/decisions/001-stack.md` and `docs/decisions/002-bazel-monorepo.md`.
 
@@ -52,11 +53,12 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 <project>/<language>/   one folder per project, then per language (ame/python/, later ame/cpp/)
 libs/<name>/             code shared by two or more projects (created when first needed)
 tools/<language>/        shared build tooling: test macro, ruff wrapper, pytest runner
+                          (tools/python/, tools/bazel/, tools/git/)
 docs/                    docs shared across the repo
   spikes/                 one findings doc per spike
   decisions/              NNN-short-title.md decision records
   superpowers/            specs/ and plans/
-.githooks/                repo git hooks (pre-commit runs the formatter and linter)
+.githooks/                repo git hooks (pre-commit, commit-msg, pre-push)
 
 Inside ame/python/:
   src/ame/<service>/      one package per service: hub, mind, voice, eyes, face, console
@@ -68,9 +70,9 @@ Every folder with code has a `BUILD.bazel`. Windows Developer Mode must be on (r
 User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-- Formatter and linter: **ruff**, config in the root `ruff.toml` (line length 100, double quotes, rules E, F, I, UP, B; imports sorted by ruff's `I` rule).
-- Format: `bazelisk run //tools/python:ruff -- format .` · Lint: `bazelisk run //tools/python:ruff -- check .`
-- Enforced on every commit by `.githooks/pre-commit`. Enable once per clone: `git config core.hooksPath .githooks`.
+- Formatter and linter: **ruff**, config in the root `ruff.toml` (line length 100, double quotes, rules E, F, I, UP, B, ASYNC, PT, SIM, C4, RUF, PERF, C901 (max complexity 10), D100-D104 and ANN; docstring and annotation rules are off in tests; imports sorted by ruff's `I` rule).
+- Enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
+- Hooks (enable once per clone: `git config core.hooksPath .githooks`): `pre-commit` checks the format of staged Python and Starlark files, `commit-msg` checks the commit format, `pre-push` runs the full gate.
 - `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
 - **Docstrings are literal:** state what the module, class, or function does — inputs, outputs, side effects. No aspirations, no marketing.
 - **No comments unless strictly necessary:** only for a non-obvious *why* the code cannot express. Never restate what the code does.
@@ -89,7 +91,7 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 ## Testing
 - Framework: **pytest**. Tests live in `ame/python/tests/`, mirroring `ame/python/src/ame/`; each file gets an `ame_test` target in that folder's `BUILD.bazel`.
 - **Keep unit tests very light:** a few tests per module — the main behaviour and the one or two failures that would actually hurt. No exhaustive case tables.
-- Tests needing hardware, the GPU, or the network are marked `hardware`, `gpu`, or `cloud` and are skipped by default. Run them explicitly with `bazelisk test <target> --test_arg=-m --test_arg=gpu` etc.
+- Tests needing hardware, the GPU, or the network use `ame_test(kind = "hardware" | "gpu" | "cloud")`: they are manual and run by name. Latency budgets use `ame_perf_test`. See `docs/engineering.md`.
 - No coverage target.
 - Run: `bazelisk test //...`
 

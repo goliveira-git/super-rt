@@ -1,6 +1,6 @@
 # Repo engineering foundation — design
 
-Date: 2026-09-29 · Status: awaiting review · Builds on `docs/decisions/002-bazel-monorepo.md`
+Date: 2026-09-29 · Status: approved 2026-09-29, implemented · Builds on `docs/decisions/002-bazel-monorepo.md`
 
 ## 1. Purpose and success criteria
 
@@ -36,7 +36,7 @@ Bazel `size` and `tags` express what the `hardware`, `gpu` and `cloud` markers d
 
 - **small** (default): hermetic, no I/O beyond temp files, seconds. Run by `//...`.
 - **manual + exclusive**, with tag `hardware`, `gpu` or `cloud`: excluded from `//...`, run by name (for example `bazelisk test //ame/python/tests/eyes:test_camera`). `exclusive` stops two hardware tests using the camera at once.
-- The `ame_test` macro takes `tags` and sets `size` and `timeout` defaults; the pytest `-m` filter in the runner is removed.
+- The `ame_test` macro takes `tags` and sets the `size` default (Bazel derives the timeout from the size); the pytest `-m` filter in the runner is removed.
 - A test file is either all hardware or none; mixed files are split.
 
 ## 4. Annotations and lint
@@ -79,8 +79,8 @@ CI is the authority; hooks are a convenience and can be bypassed. The workflow f
 1. `.editorconfig`, `.gitattributes`, `MODULE.bazel.lock` tracked.
 2. `.githooks/` and enabling instructions.
 3. Wider ruff rules, and the fixes the new rules require.
-4. `format_test` and `lint_test` targets.
-5. buildifier (`buildifier_prebuilt`) and `buildifier_test`.
+4. `python_checks` (`quality_format`, `quality_lint`).
+5. `buildifier_prebuilt` and the `starlark_checks` macro.
 6. Test sizes: `ame_test` gains `tags`, hardware and GPU tests become manual, the pytest marker filter is removed.
 7. Perf tooling: `pytest-benchmark`, `ame_perf_test`.
 8. CI workflow.
