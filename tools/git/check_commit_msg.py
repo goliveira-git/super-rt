@@ -19,13 +19,18 @@ class CommitMessageError(Exception):
     """A commit message breaks the commit format."""
 
 
-def check_message(message: str, *, allow_fixup: bool = True) -> None:
+def check_message(message: str, *, allow_fixup: bool = True, strip_comments: bool = True) -> None:
     """Raises CommitMessageError when `message` breaks the format; returns None otherwise.
 
-    Lines starting with `#` are git comments and are ignored. Fixup commits are accepted only
+    Lines starting with `#` are git comments and are ignored when `strip_comments` is true; a
+    committed message has no comments, so range checks pass false. Fixup commits are accepted only
     when `allow_fixup` is true, because they must be folded before a branch merges.
     """
-    lines = [line.rstrip() for line in message.splitlines() if not line.startswith("#")]
+    lines = [
+        line.rstrip()
+        for line in message.splitlines()
+        if not (strip_comments and line.startswith("#"))
+    ]
     while lines and not lines[0]:
         lines.pop(0)
     if not lines:
@@ -52,13 +57,21 @@ def git_log_command(revision_range: str) -> list[str]:
 
 
 def messages_in_range(revision_range: str) -> list[str]:
-    """Returns the full message of every commit in `revision_range`, e.g. origin/main..HEAD."""
-    output = subprocess.run(
-        git_log_command(revision_range),
-        capture_output=True,
-        check=True,
-        cwd=os.environ.get("BUILD_WORKSPACE_DIRECTORY"),
-    ).stdout.decode("utf-8")
+    """Returns the full message of every commit in `revision_range`, e.g. origin/main..HEAD.
+
+    Raises CommitMessageError when git rejects the range or its output is not UTF-8.
+    """
+    try:
+        output = subprocess.run(
+            git_log_command(revision_range),
+            capture_output=True,
+            check=True,
+            cwd=os.environ.get("BUILD_WORKSPACE_DIRECTORY"),
+        ).stdout.decode("utf-8")
+    except subprocess.CalledProcessError as error:
+        raise CommitMessageError(f"git could not list the range {revision_range!r}") from error
+    except UnicodeDecodeError as error:
+        raise CommitMessageError(f"messages in {revision_range!r} are not valid UTF-8") from error
     return [message for message in output.split("\x1e") if message.strip()]
 
 
@@ -72,11 +85,11 @@ def main(argv: list[str]) -> int:
     try:
         if args.file:
             base = os.environ.get("BUILD_WORKING_DIRECTORY", ".")
-            text = Path(base, args.file).read_text(encoding="utf-8")
+            text = Path(base, args.file).read_text(encoding="utf-8-sig")
             check_message(text, allow_fixup=True)
         else:
             for message in messages_in_range(args.range):
-                check_message(message, allow_fixup=False)
+                check_message(message, allow_fixup=False, strip_comments=False)
     except CommitMessageError as error:
         print(f"commit message rejected: {error}", file=sys.stderr)
         return 1
