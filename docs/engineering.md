@@ -19,8 +19,10 @@ Enable the hooks once per clone: `git config core.hooksPath .githooks`.
 
 ## Add a Python package
 1. Put the code in `<project>/python/src/<package>/` and tests in `<project>/python/tests/`.
-2. Add a `BUILD.bazel` with `python_checks(name = "quality", srcs = glob(["*.py"]), deps = [...])` and `starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"], allow_empty = True))`. `python_checks` creates `quality_format` and `quality_lint`; `starlark_checks` creates `starlark_check`. A directory with Python files and no `BUILD.bazel` fails `//tools/git:check_packages`.
+2. Add a `BUILD.bazel` with `python_checks(name = "quality", srcs = glob(["*.py"]))` and `starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"], allow_empty = True))`. `python_checks` creates `quality_format` and `quality_lint`; `starlark_checks` creates `starlark_check`. A directory with Python files and no `BUILD.bazel`, or one without `python_checks(`, fails `//tools/git:check_packages`.
 3. Add an `ame_test` target per test file.
+
+Repo-wide `.gitignore` rules ignore `*.pkl` and `*.db`, so a test fixture in those formats needs `git add -f` and a note in the commit body.
 
 ## Test kinds and where they run
 - Small tests (no `kind`) are hermetic and run under `bazelisk test //...`.

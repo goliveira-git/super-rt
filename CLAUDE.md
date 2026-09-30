@@ -125,7 +125,7 @@ it in one place keeps a malformed message from crashing the hub.
 ## Configuration and secrets
 - Runtime config: `%LOCALAPPDATA%\AMe\config.toml` (created in slice 1).
 - The Anthropic API key comes from the `ANTHROPIC_API_KEY` environment variable. Never in a file in the repo, never logged.
-- Never commit: `.env*`, recordings (`*.wav`), captures (`*.bag`, `*.npz`), meshes (`*.ply`, `*.glb`), model files.
+- Never commit: secrets (`.env*`, `*.pem`, `*.key`, `secrets.*`), recordings (`*.wav`, `*.flac`, `*.mp3`, `*.m4a`, `*.ogg`, `*.mp4`, `*.mov`, `*.avi`, `*.webm`), captures and arrays (`*.bag`, `*.npz`, `*.npy`), meshes (`*.ply`, `*.glb`), models (`*.onnx`, `*.pth`, `*.pt`, `*.safetensors`, `*.gguf`, `*.ckpt`, `*.pkl`), databases (`*.sqlite`, `*.db`), and images under `spikes/` and `recordings/` folders.
 
 ## graphify
 
