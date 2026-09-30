@@ -1,0 +1,24 @@
+line-length = 100
+target-version = "py312"
+extend-exclude = ["**/spikes", "docs", "bazel-*"]
+force-exclude = true
+
+[lint]
+select = [
+  "E", "F", "I", "UP", "B",
+  "ASYNC", "PT", "SIM", "C4", "RUF", "PERF", "C901",
+  "D100", "D101", "D102", "D103", "D104", "ANN",
+]
+
+[lint.mccabe]
+max-complexity = 10
+
+[lint.per-file-ignores]
+"**/tests/**" = ["D", "ANN"]
+"**/*_test.py" = ["D", "ANN"]
+
+[lint.isort]
+known-first-party = ["ame"]
+
+[format]
+quote-style = "double"

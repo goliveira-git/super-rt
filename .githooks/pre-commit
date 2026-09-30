@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+if (set -o pipefail) 2>/dev/null; then set -o pipefail; fi
+. "$(dirname "$0")/lib.sh"
+
+# NUL-separated names (-z), unquoted (core.quotepath=off), and `--` before the
+# file arguments keep non-ASCII names, spaces and leading dashes intact.
+# `xargs -r` skips the command when no file is staged.
+git -c core.quotepath=off diff --cached -z --name-only --diff-filter=ACM -- '*.py' |
+    xargs -0 -r "$BAZELISK" run //tools/python:ruff -- format --check --
+
+# Repo-relative paths: buildifier runs from the workspace root, and the
+# absolute root contains spaces here.
+git -c core.quotepath=off diff --cached -z --name-only --diff-filter=ACM -- '*.bazel' '*.bzl' |
+    xargs -0 -r "$BAZELISK" run //tools/bazel:buildifier -- -mode=check -lint=warn --

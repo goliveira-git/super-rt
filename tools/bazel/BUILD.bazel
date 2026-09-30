@@ -1,0 +1,12 @@
+load("//tools/bazel:defs.bzl", "starlark_checks")
+
+alias(
+    name = "buildifier",
+    actual = "@buildifier_prebuilt//:buildifier",
+    visibility = ["//visibility:public"],
+)
+
+starlark_checks(srcs = [
+    "BUILD.bazel",
+    "defs.bzl",
+])

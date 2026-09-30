@@ -1,0 +1,31 @@
+load("@rules_python//python:defs.bzl", "py_library")
+load("//tools/bazel:defs.bzl", "starlark_checks")
+load("//tools/python:defs.bzl", "ame_perf_test", "ame_test", "python_checks")
+
+ame_test(
+    name = "test_package",
+    src = "test_package.py",
+    deps = ["//ame/python/src/ame"],
+)
+
+py_library(
+    name = "perf_budget",
+    srcs = ["perf_budget.py"],
+    imports = ["."],
+)
+
+ame_perf_test(
+    name = "test_perf_smoke",
+    src = "test_perf_smoke.py",
+    deps = [":perf_budget"],
+)
+
+python_checks(
+    name = "quality",
+    srcs = glob(["*.py"]),
+)
+
+starlark_checks(srcs = ["BUILD.bazel"] + glob(
+    ["*.bzl"],
+    allow_empty = True,
+))

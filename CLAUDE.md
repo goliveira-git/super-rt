@@ -1,8 +1,8 @@
 # Project
 
-> **Status: not yet kicked off.** The Conventions section is filled in during kickoff (`architecture-kickoff` skill). Until then, do not write project code.
+> **Status: kicked off 2026-09-29.** Conventions below are binding. Design: `docs/superpowers/specs/2026-09-29-ame-design.md`.
 
-**What this is:** _(filled in at kickoff: one paragraph — what the project does and who it's for)_
+**What this is:** AMe — a local, pt-BR-speaking conversational companion for one person. It sees them through an Intel RealSense depth camera, shows a 3D face scanned from them, speaks in a clone of their voice, and learns who they are from conversation, acting as a sparring partner that thinks like them at their best. Perception, speech, face, and memory run on their PC; only conversation text goes to a Claude model.
 
 ---
 
@@ -27,40 +27,112 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 3. **Both checks must pass before release.** `test-plan` and `review-checklist` must each end in an explicit **PASS**. Not waivable under time pressure.
 4. **Ask before crossing the machine boundary.** Push, tag, publish, deploy, or anything touching a shared environment requires explicit user approval each time.
 5. **No new dependency, library, or tool without the user's approval.** Name it, say what it's for and why existing tools won't do, and wait for a yes. This includes third-party skills and plugins.
-6. **Git: branch per feature, commit per passed stage.** Work on a branch, not on `main`. Commit locally when a stage passes its check. Never push, tag, or merge into `main` without asking (rule 4). Until kickoff fills in Branching and Commit format below, name branches `feature/<short-name>` and write commit subjects in the imperative mood ("Add login form").
+6. **Git: branch per feature, clean history.** Work on a branch, not on `main`, following Branching and Commit history below. Never push, tag, or merge into `main` without asking (rule 4).
+7. **Spend tokens where judgment is needed.** The user is on a small monthly plan.
+   - **Opus** only for complex or creative work: kickoff, brainstorming, specs, writing plans, UX specs, the final whole-branch review. Switch with `/model opus`, and back with `/model sonnet` when that work is done.
+   - **Sonnet** (the default) for executing a written plan, tests, docs, and release steps.
+   - **Haiku** for any subagent that only searches or reads.
+   - Keep context small: redirect long command output to a file and read its tail; read only the part of a file you need; don't re-read files you just wrote.
+8. **Get smarter as we go.** At each stage boundary (starting a task, before a review, when something fails), name the installed skill that applies and any that was skipped, and tell subagents which skill to load. Flag a recurring task that has no skill and suggest writing one with `anthropic-skills:skill-creator` (a new third-party skill still needs approval, rule 5). When a plan finishes, add a short retrospective to the final report: what cost the most turns or tokens, and what to automate or change next time. Delegate anything a subagent can do to subagents, so the single developer only decides and approves.
 
 ---
 
 # Conventions
 
-> **PLACEHOLDER — filled in at kickoff.** Binding once written. Replace every placeholder with a specific, verifiable answer, and run each command you write down to confirm it works.
-
 ## Stack
-_Languages, frameworks, database, runtime versions, package manager. Record why, and what was rejected._
+- **Bazel** (via Bazelisk, version pinned in `.bazelversion`) builds and tests the whole monorepo. **Python 3.12** is the hermetic interpreter Bazel downloads (`rules_python`); pip dependencies are pinned in `requirements_lock.txt`. No `.venv` and no uv.
+- More languages may join as sibling folders under a project; C++ is the likeliest (`rules_cc` ships with Bazel).
+- Services are **asyncio** programs. Hub transport: WebSocket on `127.0.0.1` (spec §3).
+- Cloud model: Anthropic Claude via the official `anthropic` SDK — **only** in `ame.mind`.
+- Quality tooling: ruff (with annotation and docstring rules), buildifier, pytest-benchmark; see `docs/decisions/003-single-bazel-gate.md`.
+- Rejected: Node/TypeScript (weaker camera and ML ecosystem), uv, pip/Poetry (they keep a `.venv`; Bazel already owns the toolchain), black + flake8 (ruff does both).
+- Why: see `docs/decisions/001-stack.md` and `docs/decisions/002-bazel-monorepo.md`.
 
 ## Directory layout
-_What goes where. Where new code of each type belongs._
+```
+<project>/<language>/   one folder per project, then per language (ame/python/, later ame/cpp/)
+libs/<name>/             code shared by two or more projects (created when first needed)
+tools/<language>/        shared build tooling: test macro, ruff wrapper, pytest runner
+                          (tools/python/, tools/bazel/, tools/git/)
+docs/                    docs shared across the repo
+  spikes/                 one findings doc per spike
+  decisions/              NNN-short-title.md decision records
+  superpowers/            specs/ and plans/
+.githooks/                repo git hooks (pre-commit, commit-msg, pre-push)
+
+Inside ame/python/:
+  src/ame/<service>/      one package per service: hub, mind, voice, eyes, face, console
+  src/ame/common/         helpers used by two or more services (created when first needed)
+  tests/                  mirrors src/ame: tests/<service>/test_<module>.py
+  spikes/                 throwaway experiments; never imported by src/, excluded from lint and tests
+```
+Every folder with code has a `BUILD.bazel`. Windows Developer Mode must be on (rules_python creates symlinks).
+User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-_Formatter and linter with config, line length, import ordering, quote style. Name the exact command._
+- Formatter and linter: **ruff**, config in the root `ruff.toml` (line length 100, double quotes, rules E, F, I, UP, B, ASYNC, PT, SIM, C4, RUF, PERF, C901 (max complexity 10), D100-D104 and ANN; docstring and annotation rules are off in tests; imports sorted by ruff's `I` rule).
+- Enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
+- Hooks (enable once per clone: `git config core.hooksPath .githooks`): `pre-commit` checks the format of staged Python and Starlark files, `commit-msg` checks the commit format, `pre-push` runs the full gate.
+- `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
+- **Docstrings are literal:** state what the module, class, or function does — inputs, outputs, side effects. No aspirations, no marketing.
+- **No comments unless strictly necessary:** only for a non-obvious *why* the code cannot express. Never restate what the code does.
 
 ## Naming
-_Files, directories, types, functions, variables, constants, database objects._
+- Modules and packages: `snake_case`. Classes: `PascalCase`. Functions and variables: `snake_case`. Constants: `UPPER_SNAKE_CASE`.
+- Hub message types: lowercase dotted `service.event_name` (e.g. `voice.user_said`), matching `^[a-z]+(\.[a-z_]+)+$`.
+- Tests: `test_<behavior_in_words>`.
 
 ## Error handling
-_The project's pattern: exceptions vs. results, where errors are caught, what is logged, what reaches the user._
+- Use exceptions. Each module defines a narrow exception type for its own failures (e.g. `MessageError`).
+- Catch at service boundaries (the hub connection loop, a service's main loop): log and continue. A bad message or a failed call never crashes a service or the hub.
+- Logs are English, via stdlib `logging`. What AMe says to the user about a failure is pt-BR and goes through voice or the console.
+- Never log secrets, transcripts, or memory contents above DEBUG level.
 
 ## Testing
-_Framework, where tests live, naming, what must be tested, coverage expectation, exact run command._
+- Framework: **pytest**. Tests live in `ame/python/tests/`, mirroring `ame/python/src/ame/`; each file gets an `ame_test` target in that folder's `BUILD.bazel`.
+- **Keep unit tests very light:** a few tests per module — the main behaviour and the one or two failures that would actually hurt. No exhaustive case tables.
+- Tests needing hardware, the GPU, or the network use `ame_test(kind = "hardware" | "gpu" | "cloud")`: they are manual and run by name. Latency budgets use `ame_perf_test`. See `docs/engineering.md`.
+- No coverage target.
+- Run: `bazelisk test //...`
 
 ## Build and run
-_Exact commands: install, dev, build, lint, test._
+- Test: `bazelisk test //...`
+- Lint: `bazelisk run //tools/python:ruff -- check .` · Format check: `bazelisk run //tools/python:ruff -- format --check .`
+- Run AMe: added in slice 1 (`bazelisk run //ame/python:ame`).
+- Spikes: run with the system Python 3.12, `python ame/python/spikes/<script>.py`; each script lists its pip dependencies in its docstring and installs them with `pip install --user`. No venv.
 
 ## Branching
-_Model, branch naming, what merges where, whether `main` is protected._
+- `main` holds reviewed work only. All work happens on `feature/<short-name>` branches.
+- Keep a branch current by rebasing it onto `main` (`git rebase main`), never by merging `main` into it.
+- A branch merges into `main` only after `test-plan` and `review-checklist` both end in **PASS**, only with the user's approval, and only as a fast-forward (`git merge --ff-only`), so `main` stays linear.
+
+## Commit history
+- **One logical change per commit.** Each commit passes `bazelisk test //...` and the ruff checks on its own.
+- **No noise commits.** Fix-ups ("fix typo", "address review", "WIP") are folded into the commit they fix before the branch merges: `git commit --amend` for the latest commit, or `git commit --fixup <sha>` then `git rebase --autosquash main`.
+- **Never rewrite pushed commits.** Amend and autosquash only what exists solely on this machine.
+- Formatting-only changes to existing code go in their own commit, never mixed into a behaviour change.
+- Never commit generated files, recordings, or files unrelated to the commit's change.
 
 ## Commit format
-_The exact format, with a real example._
+Imperative subject, 72 characters max, no trailing period; blank line; body explaining why when it isn't obvious.
+```
+Add hub message envelope
+
+Every service exchanges the same JSON envelope (spec §3); validating
+it in one place keeps a malformed message from crashing the hub.
+```
 
 ## Configuration and secrets
-_Where config lives, how secrets are supplied, what must never be committed._
+- Runtime config: `%LOCALAPPDATA%\AMe\config.toml` (created in slice 1).
+- The Anthropic API key comes from the `ANTHROPIC_API_KEY` environment variable. Never in a file in the repo, never logged.
+- Never commit: secrets (`.env*`, `*.pem`, `*.key`, `secrets.*`), recordings (`*.wav`, `*.flac`, `*.mp3`, `*.m4a`, `*.ogg`, `*.mp4`, `*.mov`, `*.avi`, `*.webm`), captures and arrays (`*.bag`, `*.npz`, `*.npy`), meshes (`*.ply`, `*.glb`), models (`*.onnx`, `*.pth`, `*.pt`, `*.safetensors`, `*.gguf`, `*.ckpt`, `*.pkl`), databases (`*.sqlite`, `*.db`), and images under `spikes/` and `recordings/` folders.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

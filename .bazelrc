@@ -1,0 +1,6 @@
+startup --output_user_root=C:/bzl
+build --incompatible_strict_action_env
+test --test_output=errors
+common --@rules_python//python/config_settings:bootstrap_impl=system_python
+common --incompatible_default_to_explicit_init_py
+build --enable_runfiles
