@@ -42,7 +42,6 @@ ame_test(
 python_checks(
     name = "quality",
     srcs = glob(["*.py"]),
-    deps = [":check_commit_msg_lib"],
 )
 
 starlark_checks(srcs = ["BUILD.bazel"] + glob(

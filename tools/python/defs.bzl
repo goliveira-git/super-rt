@@ -26,10 +26,10 @@ def ame_test(name, src, deps = [], kind = None, tags = [], **kwargs):
         **kwargs
     )
 
-def python_checks(name, srcs, deps = []):
+def python_checks(name, srcs):
     """Adds format and lint checks for `srcs` as small tests named `<name>_format` and `<name>_lint`.
 
-    Call once per package with `srcs = glob(["*.py"])`. `deps` are the libraries `srcs` import.
+    Call once per package with `srcs = glob(["*.py"])`.
     """
     for mode in ["format", "lint"]:
         py_test(
@@ -38,7 +38,7 @@ def python_checks(name, srcs, deps = []):
             main = "//tools/python:check_runner.py",
             args = [mode] + ["$(rootpath %s)" % src for src in srcs],
             data = srcs + ["//:ruff.toml"],
-            deps = deps + ["//tools/python:ruff_bin"],
+            deps = ["//tools/python:ruff_bin"],
             size = "small",
             tags = ["quality"],
         )
