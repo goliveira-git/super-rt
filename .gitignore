@@ -22,10 +22,8 @@ desktop.ini
 tmp/
 .cache/
 
-# The architect extends this at kickoff with stack-specific entries
-# (dependency directories, build output, coverage reports).
 
-# Python / uv
+# Python
 .venv/
 __pycache__/
 *.pyc
@@ -42,9 +40,36 @@ __pycache__/
 *.onnx
 *.pth
 *.safetensors
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mp3
+*.m4a
+*.ogg
+*.npy
+*.pt
+*.gguf
+*.ckpt
+*.pkl
+*.sqlite
+*.db
+# Images only under spike and recording folders (docs and UI may hold images)
+**/spikes/**/*.png
+**/spikes/**/*.jpg
+**/spikes/**/*.jpeg
+**/spikes/**/*.bmp
+**/recordings/**/*.png
+**/recordings/**/*.jpg
+**/recordings/**/*.jpeg
 
 # Bazel
 bazel-*
 
 # graphify output (generated)
 graphify-out/
+
+# Documentation images stay committable, including under docs/spikes
+!docs/**/*.png
+!docs/**/*.jpg
+!docs/**/*.jpeg
