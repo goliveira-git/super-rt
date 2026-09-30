@@ -14,3 +14,20 @@ def ame_test(name, src, deps = [], **kwargs):
         deps = deps + [requirement("pytest")],
         **kwargs
     )
+
+def python_checks(name, srcs, deps = []):
+    """Adds format and lint checks for `srcs` as small tests named `<name>_format` and `<name>_lint`.
+
+    Call once per package with `srcs = glob(["*.py"])`. `deps` are the libraries `srcs` import.
+    """
+    for mode in ["format", "lint"]:
+        py_test(
+            name = "%s_%s" % (name, mode),
+            srcs = ["//tools/python:check_runner.py"],
+            main = "//tools/python:check_runner.py",
+            args = [mode] + ["$(rootpath %s)" % src for src in srcs],
+            data = srcs + ["//:ruff.toml"],
+            deps = deps + ["//tools/python:ruff_bin"],
+            size = "small",
+            tags = ["quality"],
+        )

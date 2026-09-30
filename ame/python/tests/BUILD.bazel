@@ -1,7 +1,13 @@
-load("//tools/python:defs.bzl", "ame_test")
+load("//tools/python:defs.bzl", "ame_test", "python_checks")
 
 ame_test(
     name = "test_package",
     src = "test_package.py",
+    deps = ["//ame/python/src/ame"],
+)
+
+python_checks(
+    name = "quality",
+    srcs = glob(["*.py"]),
     deps = ["//ame/python/src/ame"],
 )

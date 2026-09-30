@@ -2,4 +2,5 @@
 set -eu
 . "$(dirname "$0")/lib.sh"
 
+"$BAZELISK" run //tools/git:check_packages
 "$BAZELISK" test //...

@@ -1,5 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("//tools/python:defs.bzl", "ame_test")
+load("//tools/python:defs.bzl", "ame_test", "python_checks")
 
 py_library(
     name = "check_commit_msg_lib",
@@ -17,5 +17,29 @@ py_binary(
 ame_test(
     name = "check_commit_msg_test",
     src = "check_commit_msg_test.py",
+    deps = [":check_commit_msg_lib"],
+)
+
+py_library(
+    name = "check_packages_lib",
+    srcs = ["check_packages.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "check_packages",
+    srcs = ["check_packages.py"],
+    main = "check_packages.py",
+)
+
+ame_test(
+    name = "check_packages_test",
+    src = "check_packages_test.py",
+    deps = [":check_packages_lib"],
+)
+
+python_checks(
+    name = "quality",
+    srcs = glob(["*.py"]),
     deps = [":check_commit_msg_lib"],
 )

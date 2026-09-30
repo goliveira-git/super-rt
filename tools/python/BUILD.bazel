@@ -1,11 +1,28 @@
 load("@pip//:requirements.bzl", "requirement")
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+load("//tools/python:defs.bzl", "python_checks")
 
-exports_files(["pytest_runner.py"])
+exports_files([
+    "check_runner.py",
+    "pytest_runner.py",
+])
+
+py_library(
+    name = "ruff_bin",
+    srcs = ["ruff_bin.py"],
+    imports = ["."],
+    visibility = ["//visibility:public"],
+    deps = [requirement("ruff")],
+)
 
 py_binary(
     name = "ruff",
     srcs = ["ruff_main.py"],
     main = "ruff_main.py",
-    deps = [requirement("ruff")],
+    deps = [":ruff_bin"],
+)
+
+python_checks(
+    name = "quality",
+    srcs = glob(["*.py"]),
 )
