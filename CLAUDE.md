@@ -74,8 +74,9 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 - Enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
 - Hooks (enable once per clone: `git config core.hooksPath .githooks`): `pre-commit` checks the format of staged Python and Starlark files, `commit-msg` checks the commit format, `pre-push` runs the full gate.
 - `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
-- **Docstrings are literal:** state what the module, class, or function does — inputs, outputs, side effects. No aspirations, no marketing.
-- **No comments unless strictly necessary:** only for a non-obvious *why* the code cannot express. Never restate what the code does.
+- **Simplest code that keeps quality:** choose the most direct solution; no speculative abstractions, layers, or options until a real need exists.
+- **Docstrings are literal and short:** one line stating what it does — inputs, outputs, side effects — unless more is needed to use it correctly. No aspirations, no marketing.
+- **No comments.** Code must explain itself through names and structure; a non-obvious *why* goes in the docstring or in `docs/`.
 
 ## Naming
 - Modules and packages: `snake_case`. Classes: `PascalCase`. Functions and variables: `snake_case`. Constants: `UPPER_SNAKE_CASE`.
