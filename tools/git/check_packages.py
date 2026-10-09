@@ -1,7 +1,7 @@
 """Fails when a directory holds tracked Python files but no BUILD.bazel calling python_checks.
 
 A Python package without a BUILD.bazel, or whose BUILD.bazel never calls `python_checks(`, is
-skipped by the format and lint checks, so it must not exist.
+skipped by the format, lint and type checks, so it must not exist.
 Directories named `spikes` at any depth and the top-level `docs` tree are exempt.
 """
 

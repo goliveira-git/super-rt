@@ -23,6 +23,7 @@ ame_perf_test(
 python_checks(
     name = "quality",
     srcs = glob(["*.py"]),
+    deps = ["//ame/python/src/ame"],
 )
 
 starlark_checks(srcs = ["BUILD.bazel"] + glob(

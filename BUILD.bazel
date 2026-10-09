@@ -1,6 +1,9 @@
 load("//tools/bazel:defs.bzl", "starlark_checks")
 
-exports_files(["ruff.toml"])
+exports_files([
+    "mypy.ini",
+    "ruff.toml",
+])
 
 starlark_checks(srcs = [
     "BUILD.bazel",

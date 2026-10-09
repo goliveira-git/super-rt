@@ -6,6 +6,7 @@ load("//tools/python:defs.bzl", "ame_test", "python_checks")
 exports_files([
     "check_runner.py",
     "pytest_runner.py",
+    "types_runner.py",
 ])
 
 py_library(
@@ -29,9 +30,26 @@ ame_test(
     deps = [":ruff_bin"],
 )
 
+py_library(
+    name = "types_runner_lib",
+    srcs = ["types_runner.py"],
+    imports = ["."],
+)
+
+ame_test(
+    name = "types_runner_test",
+    src = "types_runner_test.py",
+    data = ["//:mypy.ini"],
+    deps = [
+        ":types_runner_lib",
+        requirement("mypy"),
+    ],
+)
+
 python_checks(
     name = "quality",
     srcs = glob(["*.py"]),
+    deps = [":ruff_bin"],
 )
 
 starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"]))

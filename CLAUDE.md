@@ -50,7 +50,7 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 - More languages may join as sibling folders under a project; C++ is the likeliest (`rules_cc` ships with Bazel).
 - Services are **asyncio** programs. Hub transport: WebSocket on `127.0.0.1` (spec §3).
 - Cloud model: Anthropic Claude via the official `anthropic` SDK — **only** in `ame.mind`.
-- Quality tooling: ruff (with annotation and docstring rules), buildifier, pytest-benchmark; see `docs/decisions/003-single-bazel-gate.md`.
+- Quality tooling: ruff (with annotation and docstring rules), strict mypy, buildifier, pytest-benchmark; see `docs/decisions/003-single-bazel-gate.md`.
 - Rejected: Node/TypeScript (weaker camera and ML ecosystem), uv, pip/Poetry (they keep a `.venv`; Bazel already owns the toolchain), black + flake8 (ruff does both).
 - Why: see `docs/decisions/001-stack.md` and `docs/decisions/002-bazel-monorepo.md`.
 
@@ -76,7 +76,7 @@ Every folder with code has a `BUILD.bazel`. Windows Developer Mode must be on (r
 User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-- Formatter and linter: **ruff** (config in the root `ruff.toml`), enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
+- Formatter and linter: **ruff** (`ruff.toml`); type checker: **mypy** (`mypy.ini`, strict, Python 3.12). Enforced by `bazelisk test //...` (format, lint, strict types, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
 - Hooks (enable once per clone: `git config core.hooksPath .githooks`): `pre-commit` checks the format of staged Python and Starlark files, `commit-msg` checks the commit format, `pre-push` runs the full gate.
 - **Simplest code that keeps quality:** choose the most direct solution; no speculative abstractions, layers, or options until a real need exists.
 - **Docstrings are literal and short:** one line stating what it does — inputs, outputs, side effects — unless more is needed to use it correctly. No aspirations, no marketing.

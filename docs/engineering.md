@@ -1,7 +1,7 @@
 # Engineering guide
 
 ## The gate
-`bazelisk test //...` runs unit tests, format, lint and BUILD-file lint. It must be green before every commit that changes code, and the `pre-push` hook and CI run it. Fix what it reports:
+`bazelisk test //...` runs unit tests, format, lint, strict mypy and BUILD-file lint. It must be green before every commit that changes code, and the `pre-push` hook and CI run it. Fix what it reports:
 - Python format: `bazelisk run //tools/python:ruff -- format .`
 - Python lint: `bazelisk run //tools/python:ruff -- check . --fix`
 - BUILD and .bzl: `bazelisk run //tools/bazel:buildifier -- -lint=fix <repo-relative file paths>`, run from the workspace root
@@ -15,14 +15,14 @@ Enable the hooks once per clone: `git config core.hooksPath .githooks`.
 
 ## Definition of done
 1. `bazelisk test //...` is green.
-2. Public modules, classes and functions have literal docstrings and full annotations (ruff `D` and `ANN` enforce this). There is no type checker: nothing verifies that annotations are correct.
+2. Public modules, classes and functions have literal docstrings and full annotations (ruff `D` and `ANN` enforce this). Strict mypy verifies annotations under Python 3.12.
 3. Code that has a latency budget in the AMe spec has a perf test.
 4. One logical change per commit; the message follows CLAUDE.md "Commit format".
 
 ## Add a Python package
 1. Put the code in `<project>/python/src/<package>/` and tests in `<project>/python/tests/`.
-2. Add a `BUILD.bazel` with `python_checks(name = "quality", srcs = glob(["*.py"]))` and `starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"], allow_empty = True))`. `python_checks` creates `quality_format` and `quality_lint`; `starlark_checks` creates `starlark_check`. A directory with Python files and no `BUILD.bazel`, or one without `python_checks(`, fails `//tools/git:check_packages`.
-3. Add an `ame_test` target per test file.
+2. Add a `BUILD.bazel` with `python_checks(name = "quality", srcs = glob(["*.py"]))` and `starlark_checks(srcs = ["BUILD.bazel"] + glob(["*.bzl"], allow_empty = True))`. `python_checks` creates `quality_format`, `quality_lint` and `quality_types`; `starlark_checks` creates `starlark_check`. A directory with Python files and no `BUILD.bazel`, or one without `python_checks(`, fails `//tools/git:check_packages`.
+3. Add an `ame_test` target per test file. Pass imported libraries as `python_checks(deps = [...])`.
 
 Repo-wide `.gitignore` rules ignore `*.pkl` and `*.db`, so a test fixture in those formats needs `git add -f` and a note in the commit body.
 
@@ -32,7 +32,7 @@ Repo-wide `.gitignore` rules ignore `*.pkl` and `*.db`, so a test fixture in tho
 - Perf tests use `ame_perf_test`, are manual, and are not run in CI (hosted runners are too noisy). Run one by name, for example `bazelisk test //ame/python/tests:test_perf_smoke`.
 
 ## Add a dependency
-Ask the user first (CLAUDE.md rule 5). Then pin it in `requirements_lock.txt` (exact version, including transitive packages), reference it with `requirement("name")` in the BUILD file, and record the reason in the commit body.
+Ask the user first (CLAUDE.md rule 5). Then pin it in `requirements_lock.txt` (exact version, including transitive packages), include SHA-256 hashes for the Python 3.12 Windows and Linux wheels, reference it with `requirement("name")` in the BUILD file, and record the reason in the commit body.
 
 ## Add a language
 Add its Bazel rules to `MODULE.bazel` (approval needed), create `<project>/<language>/`, and add matching check macros under `tools/<language>/`. Keep the rule: one gate, `bazelisk test //...`. For C++, use `-Wall -Wextra -Werror`, clang-tidy, clang-format and an ASan/UBSan `--config`.
