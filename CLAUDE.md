@@ -26,14 +26,20 @@ Each stage has a skill. Load it when you reach that stage, and use the installed
 2. **UI work needs a spec.** Build UI from a `docs/ux/` spec, not from imagination. No spec → write one with `ux-spec` first.
 3. **Both checks must pass before release.** `test-plan` and `review-checklist` must each end in an explicit **PASS**. Not waivable under time pressure.
 4. **Ask before crossing the machine boundary.** Push, tag, publish, deploy, or anything touching a shared environment requires explicit user approval each time.
-5. **No new dependency, library, or tool without the user's approval.** Name it, say what it's for and why existing tools won't do, and wait for a yes. This includes third-party skills and plugins.
+5. **No new dependency, library, or tool without the user's approval.** Name it, say what it's for and why existing tools won't do, and wait for a yes. This includes third-party skills and plugins, and pip packages a spike installs. Already approved: the Codex plugin (rule 8).
 6. **Git: branch per feature, clean history.** Work on a branch, not on `main`, following Branching and Commit history below. Never push, tag, or merge into `main` without asking (rule 4).
 7. **Spend tokens where judgment is needed.** The user is on a small monthly plan.
-   - **Opus** only for complex or creative work: kickoff, brainstorming, specs, writing plans, UX specs, the final whole-branch review. Switch with `/model opus`, and back with `/model sonnet` when that work is done.
+   - **Opus** only for complex or creative work: kickoff, brainstorming, specs, writing plans, UX specs, the final whole-branch review. Claude cannot switch models itself: when work crosses between Opus and Sonnet territory, tell the user to run `/model opus` or `/model sonnet`.
    - **Sonnet** (the default) for executing a written plan, tests, docs, and release steps.
    - **Haiku** for any subagent that only searches or reads.
    - Keep context small: redirect long command output to a file and read its tail; read only the part of a file you need; don't re-read files you just wrote.
-8. **Get smarter as we go.** At each stage boundary (starting a task, before a review, when something fails), name the installed skill that applies and any that was skipped, and tell subagents which skill to load. Flag a recurring task that has no skill and suggest writing one with `anthropic-skills:skill-creator` (a new third-party skill still needs approval, rule 5). When a plan finishes, add a short retrospective to the final report: what cost the most turns or tokens, and what to automate or change next time. Delegate anything a subagent can do to subagents, so the single developer only decides and approves.
+   - The global ruflo instruction (swarm and MCP tools for multi-file tasks) does not apply here; use the agents in rule 8.
+8. **Delegate execution, keep judgment.** The main session decides, plans, and verifies; delegated agents do the volume. Subagents start cold, so delegate only work worth that startup cost, with a self-contained prompt that names the files, the plan step, and the skill to load.
+   - **Codex** (`codex:codex-rescue`, runs on the user's ChatGPT plan, not Claude tokens), without asking: implementing a written plan step, multi-file refactors, mechanical bulk work, a root-cause second opinion after two failed fix attempts, and a review of the diff before commit.
+   - **Haiku subagent**: searches and reads that would flood the main context.
+   - **Keep in the main session**: kickoff, specs, plans, UX, anything ambiguous or needing back-and-forth with the user, `ame.mind` prompt and cloud-API work, and edits under ~30 lines.
+   - Delegated output is not done until the main session has checked the diff and `bazelisk test //...` passes; it then follows Commit history like any other change.
+9. **Get smarter as we go.** At each stage boundary (starting a task, before a review, when something fails), name the installed skill that applies and any that was skipped. Flag a recurring task that has no skill and suggest writing one with `anthropic-skills:skill-creator` (a new third-party skill still needs approval, rule 5). When a plan finishes, add a short retrospective to the final report: what cost the most turns or tokens, and what to automate or change next time.
 
 ---
 
@@ -85,7 +91,7 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 - Use exceptions. Each module defines a narrow exception type for its own failures (e.g. `MessageError`).
 - Catch at service boundaries (the hub connection loop, a service's main loop): log and continue. A bad message or a failed call never crashes a service or the hub.
 - Logs are English, via stdlib `logging`. What AMe says to the user about a failure is pt-BR and goes through voice or the console.
-- Never log secrets, transcripts, or memory contents above DEBUG level.
+- Secrets are never logged. Transcripts and memory contents are logged only at DEBUG, never at INFO or higher.
 
 ## Testing
 - Framework: **pytest**. Tests live in `ame/python/tests/`, mirroring `ame/python/src/ame/`; each file gets an `ame_test` target in that folder's `BUILD.bazel`.
