@@ -70,10 +70,8 @@ Every folder with code has a `BUILD.bazel`. Windows Developer Mode must be on (r
 User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe\` — never in the repo.
 
 ## Style
-- Formatter and linter: **ruff**, config in the root `ruff.toml` (line length 100, double quotes, rules E, F, I, UP, B, ASYNC, PT, SIM, C4, RUF, PERF, C901 (max complexity 10), D100-D104 and ANN; docstring and annotation rules are off in tests; imports sorted by ruff's `I` rule).
-- Enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
+- Formatter and linter: **ruff** (config in the root `ruff.toml`), enforced by `bazelisk test //...` (format, lint, BUILD lint) — the single gate for hooks, CI and local runs. Fix with the commands in `docs/engineering.md`.
 - Hooks (enable once per clone: `git config core.hooksPath .githooks`): `pre-commit` checks the format of staged Python and Starlark files, `commit-msg` checks the commit format, `pre-push` runs the full gate.
-- `.editorconfig` sets UTF-8, LF line endings, and 4-space indentation; `.gitattributes` normalises line endings to LF.
 - **Simplest code that keeps quality:** choose the most direct solution; no speculative abstractions, layers, or options until a real need exists.
 - **Docstrings are literal and short:** one line stating what it does — inputs, outputs, side effects — unless more is needed to use it correctly. No aspirations, no marketing.
 - **No comments.** Code must explain itself through names and structure; a non-obvious *why* goes in the docstring or in `docs/`.
@@ -94,7 +92,6 @@ User data (memory, logs, recordings, scans, models) lives in `%LOCALAPPDATA%\AMe
 - **Keep unit tests very light:** a few tests per module — the main behaviour and the one or two failures that would actually hurt. No exhaustive case tables.
 - Tests needing hardware, the GPU, or the network use `ame_test(kind = "hardware" | "gpu" | "cloud")`: they are manual and run by name. Latency budgets use `ame_perf_test`. See `docs/engineering.md`.
 - No coverage target.
-- Run: `bazelisk test //...`
 
 ## Build and run
 - Test: `bazelisk test //...`
@@ -127,13 +124,3 @@ it in one place keeps a malformed message from crashing the hub.
 - Runtime config: `%LOCALAPPDATA%\AMe\config.toml` (created in slice 1).
 - The Anthropic API key comes from the `ANTHROPIC_API_KEY` environment variable. Never in a file in the repo, never logged.
 - Never commit: secrets (`.env*`, `*.pem`, `*.key`, `secrets.*`), recordings (`*.wav`, `*.flac`, `*.mp3`, `*.m4a`, `*.ogg`, `*.mp4`, `*.mov`, `*.avi`, `*.webm`), captures and arrays (`*.bag`, `*.npz`, `*.npy`), meshes (`*.ply`, `*.glb`), models (`*.onnx`, `*.pth`, `*.pt`, `*.safetensors`, `*.gguf`, `*.ckpt`, `*.pkl`), databases (`*.sqlite`, `*.db`), and images under `spikes/` and `recordings/` folders.
-
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
